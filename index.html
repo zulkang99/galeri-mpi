@@ -5,49 +5,81 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Galeri Media Pembelajaran Interaktif</title>
     
-    <!-- Tailwind CSS CDN -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- React & Babel CDN -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <!-- Framer Motion & Lucide Icons -->
-    <script src="https://bundle.run/framer-motion@10.16.4"></script>
+    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
         
+        :root {
+            --primary: #3b82f6;
+            --secondary: #8b5cf6;
+        }
+
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             scroll-behavior: smooth;
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* Pre-loader simple CSS */
+        /* Splash Screen Ringan */
         #loader {
-            position: fixed; inset: 0; background: #f8fafc; display: flex;
-            justify-content: center; items-center; z-index: 9999; transition: opacity 0.5s ease;
+            position: fixed; inset: 0; background: #ffffff; display: flex;
+            justify-content: center; align-items: center; z-index: 9999;
+            transition: opacity 0.4s ease-out, visibility 0.4s;
         }
         .dark #loader { background: #020617; }
-        .spinner { width: 40px; height: 40px; border: 4px solid #3b82f6; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; }
+        .spinner { width: 40px; height: 40px; border: 3px solid #3b82f6; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
         .glass-card {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
         .dark .glass-card {
-            background: rgba(15, 23, 42, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+        }
+        .animate-float { animation: float 5s ease-in-out infinite; }
+
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Modal Animation CSS */
+        .modal-overlay {
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content-box {
+            transform: scale(0.9) translateY(20px);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .modal-overlay.active .modal-content-box {
+            transform: scale(1) translateY(0px);
+        }
+        
+        .card-reveal { 
+            animation: reveal 0.5s ease-out forwards; 
+            opacity: 0; 
+        }
+        @keyframes reveal { 
+            from { opacity: 0; transform: translateY(20px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
     </style>
 
     <script>
@@ -64,307 +96,277 @@
         }
     </script>
 </head>
-<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-300">
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300">
     
+    <!-- Loader -->
     <div id="loader"><div class="spinner"></div></div>
-    <div id="root"></div>
 
-    <script type="text/babel">
-        const { useState, useEffect, useMemo, useRef } = React;
-        
-        const motion = window.Motion ? window.Motion.motion : { div: 'div', h1: 'h1', p: 'p', nav: 'nav', header: 'header', section: 'section' };
-        const AnimatePresence = window.Motion ? window.Motion.AnimatePresence : ({children}) => <>{children}</>;
+    <!-- Navigation -->
+    <nav id="navbar" class="fixed top-0 w-full z-50 transition-all duration-300 py-6">
+        <div class="container mx-auto px-6 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <img src="logo.svg" alt="Logo" class="h-10 w-auto object-contain">
+                <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 font-bold text-xl hidden sm:block">Galeri MPI</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <button id="theme-toggle" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-slate-600 dark:text-yellow-400">
+                    <i data-lucide="moon" id="theme-icon"></i>
+                </button>
+                <a href="mailto:zulganteng00799@gmail.com" class="hidden md:block bg-primary text-white px-6 py-2.5 rounded-full font-semibold text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20">Hubungi Saya</a>
+            </div>
+        </div>
+    </nav>
 
+    <!-- Hero -->
+    <header class="pt-32 pb-20 px-6 text-center relative overflow-hidden">
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 -z-10 w-full h-full opacity-20 pointer-events-none">
+            <div class="absolute top-20 left-1/4 w-72 h-72 bg-blue-400 rounded-full blur-[120px]"></div>
+            <div class="absolute top-40 right-1/4 w-72 h-72 bg-purple-400 rounded-full blur-[120px]"></div>
+        </div>
+
+        <div class="flex flex-col items-center">
+            <img src="logo.svg" alt="Hero Logo" class="h-32 md:h-40 w-auto mb-8 drop-shadow-2xl animate-float">
+            <h1 class="text-4xl md:text-6xl font-extrabold mb-6 tracking-tight leading-tight">
+                Galeri<br/>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">Media Pembelajaran Interaktif</span>
+            </h1>
+            <p class="text-slate-600 dark:text-slate-400 max-w-2xl mx-auto text-lg mb-10">
+                Koleksi media pembelajaran digital yang dirancang untuk performa tinggi dan pengalaman belajar yang menyenangkan.
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <a href="#karya" class="bg-primary text-white px-10 py-4 rounded-2xl font-bold shadow-xl shadow-blue-500/30 hover:scale-105 transition-transform">Eksplorasi Karya</a>
+                <a href="#tentang" class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white px-10 py-4 rounded-2xl font-bold border border-slate-200 dark:border-slate-700 hover:bg-slate-50 transition-all">Profil</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <section id="karya" class="py-12 container mx-auto px-6">
+        <!-- Toolbar -->
+        <div class="glass-card p-4 rounded-[2rem] mb-12 flex flex-col md:flex-row gap-4 items-center">
+            <div class="relative flex-1 w-full text-left">
+                <div class="absolute inset-y-0 left-4 flex items-center text-slate-400">
+                    <i data-lucide="search" class="w-5 h-5"></i>
+                </div>
+                <input 
+                    id="search-input"
+                    type="text" 
+                    placeholder="Cari media..." 
+                    class="w-full bg-slate-100/50 dark:bg-slate-800/50 rounded-2xl py-3.5 pl-12 pr-4 outline-none focus:ring-2 ring-primary/40 border border-transparent dark:border-slate-700"
+                />
+            </div>
+            <div id="category-list" class="flex gap-2 overflow-x-auto w-full md:w-auto no-scrollbar py-2 md:py-0">
+                <!-- Kategori akan diisi oleh JS -->
+            </div>
+        </div>
+
+        <!-- Grid -->
+        <div id="mpi-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            <!-- Kartu akan diisi oleh JS -->
+        </div>
+    </section>
+
+    <!-- Profil Section -->
+    <section id="tentang" class="py-24 bg-slate-100/30 dark:bg-slate-900/20">
+        <div class="container mx-auto px-6">
+            <div class="glass-card rounded-[3.5rem] p-10 md:p-16 flex flex-col md:flex-row items-center gap-12">
+                <div class="md:w-1/3">
+                    <div class="relative group">
+                        <div class="absolute inset-0 bg-primary/20 rounded-[3rem] rotate-6"></div>
+                        <div class="relative w-64 h-64 mx-auto rounded-[3rem] overflow-hidden border-8 border-white dark:border-slate-800 shadow-2xl">
+                            <img src="profil (2).png" class="w-full h-full object-cover" alt="Zulkifli" loading="lazy">
+                        </div>
+                    </div>
+                </div>
+                <div class="md:w-2/3 text-center md:text-left">
+                    <span class="text-primary font-bold tracking-widest text-xs uppercase mb-4 block">Pengembang Media</span>
+                    <h2 class="text-3xl md:text-5xl font-bold mb-6 leading-tight">Zulkifli, M.Pd</h2>
+                    <p class="text-slate-600 dark:text-slate-400 mb-8 text-lg leading-relaxed">
+                        Guru SDN 4 Banawa yang berfokus pada pengembangan teknologi pendidikan. Berkomitmen menghadirkan solusi belajar digital yang aksesibel dan bermutu tinggi.
+                    </p>
+                    <div class="flex flex-wrap justify-center md:justify-start gap-4">
+                        <a href="mailto:zulganteng00799@gmail.com" class="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition-all">
+                            <i data-lucide="mail" class="w-5 h-5"></i> Kontak Saya
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-16 text-center border-t border-slate-200 dark:border-slate-800">
+        <p class="mb-2 text-sm font-medium">Dikreasikan dengan <i data-lucide="heart" class="inline w-3 h-3 text-red-500 fill-current"></i> oleh <span class="text-slate-900 dark:text-white font-bold">Zulkifli, M.Pd</span></p>
+        <p class="text-[10px] uppercase tracking-[0.4em] font-bold opacity-60">© 2026 Galeri MPI • Media Pembelajaran Interaktif</p>
+    </footer>
+
+    <!-- Modal -->
+    <div id="modal-overlay" class="modal-overlay fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6">
+        <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-md" onclick="closeModal()"></div>
+        <div id="modal-container" class="modal-content-box relative bg-white dark:bg-slate-900 w-full max-w-5xl rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col md:flex-row max-h-[90vh]">
+            <!-- Konten Modal diisi JS -->
+        </div>
+    </div>
+
+    <script>
+        // DATA APLIKASI
         const MPI_DATA = [
-            {
-                id: 1,
-                title: "Gudang Sortir",
-                category: "Matematika",
-                description: "Simulasi sortir bangun datar berdasarkan sifat dan bentuknya.",
-                longDescription: "Media ini dirancang agar siswa dapat mengelompokkan bangun datar berdasarkan sifat dan bentuknya.",
-                learningGoal: "mengidentifikasi bangun datar.",
-                tech: ["HTML5", "Canvas", "Tailwind"],
-                image: "gudangsortir.png",
-                url: "https://gudangsortir.netlify.app/"
-            },
-            {
-                id: 2,
-                title: "Simulator Rasio Minuman",
-                category: "Matematika",
-                description: "Visualisasi perbandingan melalui eksperimen mencampur bahan minuman virtual.",
-                longDescription: "Siswa belajar konsep rasio dengan mencampurkan sirup dan air untuk memahami konsep perbandingan secara visual.",
-                learningGoal: "Memahami konsep rasio dalam kehidupan sehari-hari.",
-                tech: ["HTML5", "Canvas", "Tailwind"],
-                image: "caferasio.png",
-                url: "https://caferasio.netlify.app/"
-            },
-            {
-                id: 3,
-                title: "Simulasi Energi Terbarukan",
-                category: "IPAS",
-                description: "Simulator interaktif untuk memahami cara kerja panel surya dan turbin angin.",
-                longDescription: "Media ini dirancang agar siswa dapat bereksperimen dengan intensitas cahaya dan kecepatan angin untuk melihat output energi listrik secara real-time.",
-                learningGoal: "Menganalisis faktor yang mempengaruhi efisiensi energi terbarukan.",
-                tech: ["HTML5", "Canvas", "Tailwind"],
-                image: "eduenergi.png",
-                url: "https://eduenergi.netlify.app/"
-            },
-            {
-                id: 4,
-                title: "Laporan Kegiatan Bulan Ramadhan",
-                category: "Pend. Agama Islam",
-                description: "Laporan ini berfungi sebagai jurnal harian kegiatan yang dilaksanakan oleh murid selama bulan.",
-                longDescription: "Laporan ini berfungsi sebagai jurnal harian kegiatan murid selama satu bulan pembelajaran. Setiap aktivitas belajar, tugas, dan proyek dicatat untuk memantau perkembangan, kedisiplinan, serta tanggung jawab murid. Selain itu, laporan ini menjadi sarana refleksi dan evaluasi agar proses belajar berlangsung lebih terarah, terukur, dan berkesinambungan..",
-                learningGoal: "Melaksanakan kegiatan bulan ramadhan dengan istiqomah.",
-                tech: ["HTML5", "Canvas", "Tailwind"],
-                image: "LaporanRamadhan.png",
-                url: "https://ramadhan-sdn4bnw.netlify.app/"
-            },
-            {
-                id: 5,
-                title: "Robocoder",
-                category: "Koding & KA",
-                description: "Media interaktif belajar pemrograman dasar untuk anak melalui simulasi robot.",
-                longDescription: "RoboCoder AI adalah media pembelajaran berbasis gim yang melatih logika pemrograman anak dengan menyusun blok perintah untuk menggerakkan robot menyelesaikan misi..",
-                learningGoal: "Melatih logika pemrograman dasar dan berpikir komputasional anak melalui penyusunan blok perintah robot.",
-                tech: ["HTML5", "Canvas", "Tailwind"],
-                image: "robocoder.png",
-                url: "https://robocoder.netlify.app/"
-            },
-            {
-                id: 6,
-                title: "Trouble Calculator",
-                category: "Koding & KA",
-                description: "Game tantangan matematika interaktif memecahkan angka target dengan tombol terbatas.",
-                longDescription: "Media simulasi kalkulator unik di mana siswa harus berpikir kritis menggunakan tombol operasi terbatas untuk mencapai target angka satu hingga dua puluh.",
-                learningGoal: "Melatih kemampuan logika, operasi hitung bilangan, dan kreativitas memecahkan masalah.",
-                tech: ["HTML5", "Canvas", "Tailwind"],
-                image: "troublecalculator.png",
-                url: "https://trouble-calculator.netlify.app/"
-            }
+            { id: 1, title: "Gudang Sortir", category: "Matematika", description: "Simulasi sortir bangun datar berdasarkan sifat dan bentuknya.", longDescription: "Media ini membantu siswa membedakan berbagai jenis bangun datar melalui aktivitas klasifikasi yang interaktif.", learningGoal: "Siswa dapat mengidentifikasi dan mengelompokkan bangun datar.", tech: ["HTML5", "Canvas", "JS"], image: "gudangsortir.png", url: "https://gudangsortir.netlify.app/" },
+            { id: 2, title: "Simulator Rasio Minuman", category: "Matematika", description: "Visualisasi perbandingan melalui eksperimen mencampur bahan minuman.", longDescription: "Siswa bereksperimen mencampur sirup dan air untuk memahami konsep rasio secara visual dan proporsional.", learningGoal: "Memahami konsep rasio dan perbandingan.", tech: ["JS", "Animation", "Math"], image: "caferasio.png", url: "https://caferasio.netlify.app/" },
+            { id: 3, title: "Simulasi Energi Terbarukan", category: "IPAS", description: "Simulator interaktif cara kerja panel surya dan turbin angin.", longDescription: "Eksplorasi sumber energi masa depan dengan simulasi variabel cuaca terhadap hasil listrik.", learningGoal: "Menganalisis faktor efisiensi energi terbarukan.", tech: ["Physics", "Simulation"], image: "eduenergi.png", url: "https://eduenergi.netlify.app/" },
+            { id: 4, title: "Laporan Bulan Ramadhan", category: "Pend. Agama Islam", description: "Jurnal harian digital kegiatan murid selama bulan Ramadhan.", longDescription: "Aplikasi monitoring ibadah harian yang memudahkan guru dan orang tua memantau progres siswa.", learningGoal: "Membiasakan karakter disiplin dalam beribadah.", tech: ["Web App", "Database"], image: "LaporanRamadhan.png", url: "https://ramadhan-sdn4bnw.netlify.app/" },
+            { id: 5, title: "Robocoder", category: "Koding & KA", description: "Belajar pemrograman dasar melalui simulasi pergerakan robot.", longDescription: "Pengenalan algoritma dasar menggunakan logika blok instruksi untuk menggerakkan robot ke tujuan.", learningGoal: "Melatih Computational Thinking.", tech: ["Logic", "Coding"], image: "robocoder.png", url: "https://robocoder.netlify.app/" },
+            { id: 6, title: "Trouble Calculator", category: "Koding & KA", description: "Tantangan logika matematika memecahkan angka target.", longDescription: "Game matematika di mana pemain harus mencapai hasil tertentu dengan batasan tombol kalkulator.", learningGoal: "Meningkatkan kemampuan pemecahan masalah.", tech: ["Math Game", "Logic"], image: "troublecalculator.png", url: "https://trouble-calculator.netlify.app/" }
         ];
 
-       const CATEGORIES = ["Semua", "Matematika", "IPAS", "Bahasa Indonesia", "Koding & KA", "Pend. Agama Islam"];
+        const CATEGORIES = ["Semua", "Matematika", "IPAS", "Koding & KA", "Pend. Agama Islam"];
+        
+        // STATE
+        let activeCategory = "Semua";
+        let searchQuery = "";
 
-        function App() {
-            const [darkMode, setDarkMode] = useState(false);
-            const [selectedCategory, setSelectedCategory] = useState("Semua");
-            const [searchTerm, setSearchTerm] = useState("");
-            const [selectedMPI, setSelectedMPI] = useState(null);
-            const [scrolled, setScrolled] = useState(false);
-
-            useEffect(() => {
-                // Menghilangkan loader saat React siap
+        // INITIALIZATION
+        function init() {
+            // Hilangkan Loader
+            setTimeout(() => {
                 const loader = document.getElementById('loader');
-                if (loader) {
-                    loader.style.opacity = '0';
-                    setTimeout(() => loader.remove(), 500);
-                }
-                
-                const handleScroll = () => setScrolled(window.scrollY > 20);
-                window.addEventListener('scroll', handleScroll);
-                return () => window.removeEventListener('scroll', handleScroll);
-            }, []);
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 400);
+            }, 300);
 
-            useEffect(() => {
-                if (window.lucide) {
-                    window.lucide.createIcons();
+            renderCategories();
+            renderGrid();
+            setupEvents();
+            lucide.createIcons();
+        }
+
+        // RENDERERS
+        function renderCategories() {
+            const container = document.getElementById('category-list');
+            container.innerHTML = CATEGORIES.map(cat => `
+                <button 
+                    onclick="filterCategory('${cat}')"
+                    class="px-6 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${activeCategory === cat ? 'bg-primary text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-700'}"
+                >
+                    ${cat}
+                </button>
+            `).join('');
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('mpi-grid');
+            const filtered = MPI_DATA.filter(item => {
+                const matchCat = activeCategory === "Semua" || item.category === activeCategory;
+                const matchSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase());
+                return matchCat && matchSearch;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div class="col-span-full py-20 text-center opacity-40 italic">Media tidak ditemukan...</div>`;
+                return;
+            }
+
+            grid.innerHTML = filtered.map((item, idx) => `
+                <div class="card-reveal bg-white dark:bg-slate-900 rounded-[2.2rem] overflow-hidden border border-slate-100 dark:border-slate-800 hover:shadow-2xl transition-all" style="animation-delay: ${idx * 0.05}s">
+                    <div class="relative h-48 overflow-hidden cursor-pointer" onclick="openModal(${item.id})">
+                        <img src="${item.image}" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500" loading="lazy" onerror="this.src='https://placehold.co/600x400?text=Media+MPI'">
+                        <div class="absolute top-4 left-4 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md px-3 py-1 rounded-lg text-[10px] font-bold text-primary uppercase">${item.category}</div>
+                    </div>
+                    <div class="p-7">
+                        <h3 class="font-bold text-xl mb-2 text-slate-900 dark:text-slate-100 hover:text-primary transition-colors cursor-pointer" onclick="openModal(${item.id})">${item.title}</h3>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mb-8 line-clamp-2">${item.description}</p>
+                        <div class="flex gap-3">
+                            <button onclick="openModal(${item.id})" class="flex-1 bg-slate-100 dark:bg-slate-800 py-3.5 rounded-2xl text-[10px] font-extrabold uppercase tracking-widest hover:bg-primary hover:text-white transition-all">Detail</button>
+                            <a href="${item.url}" target="_blank" class="bg-primary text-white p-3.5 rounded-2xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/20 active:scale-95">
+                                <i data-lucide="external-link" class="w-5 h-5"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        // LOGIC FUNCTIONS
+        window.filterCategory = (cat) => {
+            activeCategory = cat;
+            renderCategories();
+            renderGrid();
+        };
+
+        window.openModal = (id) => {
+            const item = MPI_DATA.find(m => m.id === id);
+            const overlay = document.getElementById('modal-overlay');
+            const container = document.getElementById('modal-container');
+
+            container.innerHTML = `
+                <div class="md:w-1/2 h-64 md:h-auto overflow-hidden">
+                    <img src="${item.image}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/600x400?text=Media+MPI'">
+                </div>
+                <div class="md:w-1/2 p-8 md:p-12 overflow-y-auto no-scrollbar relative text-left">
+                    <button onclick="closeModal()" class="absolute top-6 right-6 p-2 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-red-500 hover:text-white transition-all">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                    <span class="inline-block px-3 py-1 bg-primary/10 text-primary rounded-lg text-[10px] font-bold uppercase tracking-widest mb-4">${item.category}</span>
+                    <h2 class="text-3xl font-extrabold mb-6 leading-tight">${item.title}</h2>
+                    <div class="space-y-6 mb-10">
+                        <div>
+                            <h4 class="text-[10px] uppercase text-slate-400 font-bold tracking-widest mb-2">Deskripsi</h4>
+                            <p class="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">${item.longDescription}</p>
+                        </div>
+                        <div>
+                            <h4 class="text-[10px] uppercase text-slate-400 font-bold tracking-widest mb-2">Tujuan Belajar</h4>
+                            <p class="text-slate-600 dark:text-slate-400 text-sm font-medium">${item.learningGoal}</p>
+                        </div>
+                        <div class="flex gap-2">
+                            ${item.tech.map(t => `<span class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-[10px] font-bold">${t}</span>`).join('')}
+                        </div>
+                    </div>
+                    <a href="${item.url}" target="_blank" class="flex items-center justify-center gap-2 bg-primary hover:bg-blue-700 text-white py-4 rounded-2xl font-bold shadow-xl transition-all active:scale-95">
+                        Buka Media Sekarang <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                    </a>
+                </div>
+            `;
+
+            overlay.classList.add('active');
+            lucide.createIcons();
+        };
+
+        window.closeModal = () => {
+            document.getElementById('modal-overlay').classList.remove('active');
+        };
+
+        function setupEvents() {
+            // Scroll Effects
+            window.addEventListener('scroll', () => {
+                const nav = document.getElementById('navbar');
+                if (window.scrollY > 50) {
+                    nav.classList.add('bg-white/80', 'dark:bg-slate-900/80', 'backdrop-blur-md', 'shadow-sm', 'py-4');
+                    nav.classList.remove('py-6');
+                } else {
+                    nav.classList.remove('bg-white/80', 'dark:bg-slate-900/80', 'backdrop-blur-md', 'shadow-sm', 'py-4');
+                    nav.classList.add('py-6');
                 }
             });
 
-            const filteredData = useMemo(() => {
-                return MPI_DATA.filter(item => {
-                    const matchesCat = selectedCategory === "Semua" || item.category === selectedCategory;
-                    const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase());
-                    return matchesCat && matchesSearch;
-                });
-            }, [selectedCategory, searchTerm]);
+            // Theme Switch
+            document.getElementById('theme-toggle').addEventListener('click', () => {
+                document.documentElement.classList.toggle('dark');
+                const isDark = document.documentElement.classList.contains('dark');
+                const icon = document.getElementById('theme-icon');
+                icon.setAttribute('data-lucide', isDark ? 'sun' : 'moon');
+                lucide.createIcons();
+            });
 
-            return (
-                <div className={darkMode ? 'dark' : ''}>
-                    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
-                        
-                        {/* Header / Navbar */}
-                        <nav className={`fixed top-0 w-full z-50 transition-all ${scrolled ? 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-6'}`}>
-                            <div className="container mx-auto px-6 flex justify-between items-center">
-                                <div className="flex items-center gap-3">
-                                    {/* Logo Image */}
-                                    <img 
-                                        src="logo.png" 
-                                        alt="Logo MPI Gallery" 
-                                        className="h-10 w-auto object-contain rounded-lg"
-                                    />
-                                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 font-bold text-xl hidden sm:block">
-                                        MPI Gallery
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <button onClick={() => setDarkMode(!darkMode)} className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-slate-600 dark:text-yellow-400">
-                                        {darkMode ? <i data-lucide="sun"></i> : <i data-lucide="moon"></i>}
-                                    </button>
-                                    <button className="hidden md:block bg-primary text-white px-6 py-2 rounded-full font-semibold text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20">Kontak</button>
-                                </div>
-                            </div>
-                        </nav>
-
-                        {/* Hero Section */}
-                        <header className="pt-40 pb-20 px-6 text-center">
-                            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-                                <h1 className="text-4xl md:text-6xl font-extrabold mb-6 tracking-tight text-slate-900 dark:text-white">
-                                    Galeri Media Pembelajaran<br/>
-                                    <span className="text-primary">Interaktif Digital</span>
-                                </h1>
-                                <p className="text-slate-600 dark:text-slate-300 max-w-2xl mx-auto text-lg mb-10">
-                                    Koleksi karya inovatif untuk menghadirkan pengalaman belajar yang menyenangkan bagi siswa di era digital.
-                                </p>
-                                <div className="flex justify-center gap-4">
-                                    <a href="#karya" className="bg-primary text-white px-8 py-3 rounded-full font-bold shadow-lg shadow-blue-500/30 hover:scale-105 transition-transform">Lihat Karya</a>
-                                    <a href="#tentang" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white px-8 py-3 rounded-full font-bold border dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">Tentang Saya</a>
-                                </div>
-                            </motion.div>
-                        </header>
-
-                        {/* Filter & Search Section */}
-                        <section id="karya" className="py-12 container mx-auto px-6">
-                            <div className="glass-card p-4 rounded-3xl mb-12 flex flex-col md:flex-row gap-4 items-center">
-                                <div className="relative flex-1 w-full">
-                                    <div className="absolute inset-y-0 left-4 flex items-center text-slate-400">
-                                        <i data-lucide="search" className="w-5 h-5"></i>
-                                    </div>
-                                    <input 
-                                        type="text" 
-                                        placeholder="Cari media..." 
-                                        className="w-full bg-slate-100 dark:bg-slate-800/50 rounded-2xl py-3 pl-12 pr-4 outline-none focus:ring-2 ring-primary text-slate-700 dark:text-slate-100"
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                    />
-                                </div>
-                                <div className="flex gap-2 overflow-x-auto w-full md:w-auto no-scrollbar py-2 md:py-0">
-                                    {CATEGORIES.map(cat => (
-                                        <button 
-                                            key={cat}
-                                            onClick={() => setSelectedCategory(cat)}
-                                            className={`px-5 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${selectedCategory === cat ? 'bg-primary text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
-                                        >
-                                            {cat}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Card Grid */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                                {filteredData.map(item => (
-                                    <motion.div 
-                                        layout
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        key={item.id}
-                                        className="group bg-white dark:bg-slate-900 rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-slate-800 hover:shadow-2xl transition-all duration-300"
-                                    >
-                                        <div className="relative h-48 overflow-hidden cursor-pointer" onClick={() => setSelectedMPI(item)}>
-                                            <img src={item.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={item.title} />
-                                            <div className="absolute top-4 left-4 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold text-primary uppercase shadow-sm">{item.category}</div>
-                                        </div>
-                                        <div className="p-6">
-                                            <h3 className="font-bold text-xl mb-2 text-slate-900 dark:text-slate-100 group-hover:text-primary transition-colors cursor-pointer" onClick={() => setSelectedMPI(item)}>{item.title}</h3>
-                                            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 line-clamp-2">{item.description}</p>
-                                            <div className="flex gap-2">
-                                                <button onClick={() => setSelectedMPI(item)} className="flex-1 bg-slate-100 dark:bg-slate-800 py-3 rounded-2xl text-xs font-bold hover:bg-primary hover:text-white transition-all text-slate-700 dark:text-slate-200">Detail</button>
-                                                <a href={item.url} target="_blank" className="bg-primary text-white p-3 rounded-2xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/20 active:scale-90" title="Buka Website">
-                                                    <i data-lucide="external-link" className="w-5 h-5"></i>
-                                                </a>
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                ))}
-                            </div>
-                            
-                            {filteredData.length === 0 && (
-                                <div className="text-center py-20">
-                                    <p className="text-slate-400 italic">Tidak ada media yang sesuai dengan pencarian Anda.</p>
-                                </div>
-                            )}
-                        </section>
-
-                        {/* About Section */}
-                        <section id="tentang" className="py-24 bg-slate-100 dark:bg-slate-900/50">
-                            <div className="container mx-auto px-6 flex flex-col md:flex-row items-center gap-12">
-                                <div className="md:w-1/3">
-                                    <div className="w-64 h-64 mx-auto rounded-[3rem] overflow-hidden border-8 border-white dark:border-slate-800 shadow-2xl transform -rotate-3 hover:rotate-0 transition-transform duration-500">
-                                        <img src="profil (2).png" className="w-full h-full object-cover" alt="Profile Zulkifli" />
-                                    </div>
-                                </div>
-                                <div className="md:w-2/3 text-center md:text-left">
-                                    <h2 className="text-3xl md:text-4xl font-bold mb-6 text-slate-900 dark:text-white">Membangun Masa Depan Melalui <span className="text-primary">Inovasi Digital</span></h2>
-                                    <p className="text-slate-600 dark:text-slate-300 mb-8 text-lg leading-relaxed">Seorang pendidik yang berdedikasi menciptakan media pembelajaran interaktif untuk memudahkan pemahaman siswa dan membuat proses belajar menjadi lebih efisien serta bermakna.</p>
-                                    <div className="flex justify-center md:justify-start gap-8">
-                                    </div>
-                                </div>
-                            </div>
-                        </section>
-
-                        {/* Footer Section */}
-                        <footer className="py-12 text-center text-slate-500 dark:text-slate-400 text-sm border-t dark:border-slate-800">
-                            <p className="mb-2">Dikreasikan oleh <span className="text-slate-800 dark:text-slate-200 font-semibold tracking-wide">Zulkifli, M.Pd</span></p>
-                            <p className="text-xs uppercase tracking-[0.3em] font-medium opacity-70">SDN 4 Banawa</p>
-                        </footer>
-
-                        {/* Modal Detail Section */}
-                        <AnimatePresence>
-                            {selectedMPI && (
-                                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedMPI(null)} className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" />
-                                    <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }} className="relative bg-white dark:bg-slate-900 w-full max-w-4xl rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col md:flex-row max-h-[90vh]">
-                                        <div className="md:w-1/2 h-56 md:h-auto">
-                                            <img src={selectedMPI.image} className="w-full h-full object-cover" alt={selectedMPI.title} />
-                                        </div>
-                                        <div className="md:w-1/2 p-8 md:p-10 overflow-y-auto no-scrollbar relative">
-                                            <button onClick={() => setSelectedMPI(null)} className="absolute top-6 right-6 p-2 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-900/30 text-slate-500 hover:text-red-500 transition-colors">
-                                                <i data-lucide="x" className="w-5 h-5"></i>
-                                            </button>
-                                            <span className="text-primary font-bold text-xs uppercase tracking-[0.2em]">{selectedMPI.category}</span>
-                                            <h2 className="text-3xl font-extrabold mt-2 mb-6 pr-8 leading-tight text-slate-900 dark:text-white">{selectedMPI.title}</h2>
-                                            
-                                            <div className="space-y-6 mb-10 text-left">
-                                                <div>
-                                                    <h4 className="font-bold text-[10px] uppercase text-slate-400 tracking-widest mb-2 flex items-center gap-2">
-                                                        <i data-lucide="info" className="w-3 h-3"></i> Deskripsi
-                                                    </h4>
-                                                    <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">{selectedMPI.longDescription}</p>
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-bold text-[10px] uppercase text-slate-400 tracking-widest mb-2 flex items-center gap-2">
-                                                        <i data-lucide="target" className="w-3 h-3"></i> Tujuan Pembelajaran
-                                                    </h4>
-                                                    <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">{selectedMPI.learningGoal}</p>
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-bold text-[10px] uppercase text-slate-400 tracking-widest mb-3 flex items-center gap-2">
-                                                        <i data-lucide="code" className="w-3 h-3"></i> Teknologi
-                                                    </h4>
-                                                    <div className="flex gap-2 flex-wrap">
-                                                        {selectedMPI.tech.map(t => <span key={t} className="px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-[10px] font-semibold tracking-wide">{t}</span>)}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <a href={selectedMPI.url} target="_blank" className="block w-full bg-primary hover:bg-blue-700 text-white text-center py-4 rounded-2xl font-bold shadow-xl shadow-blue-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
-                                                Buka Media Pembelajaran <i data-lucide="external-link" className="w-4 h-4"></i>
-                                            </a>
-                                        </div>
-                                    </motion.div>
-                                </div>
-                            )}
-                        </AnimatePresence>
-
-                    </div>
-                </div>
-            );
+            // Search input
+            document.getElementById('search-input').addEventListener('input', (e) => {
+                searchQuery = e.target.value;
+                renderGrid();
+            });
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        // START
+        window.onload = init;
     </script>
 </body>
 </html>
